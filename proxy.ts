@@ -1,11 +1,25 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { updateSession } from "@/lib/supabase/middleware";
+import { lookupRedirect } from "@/lib/seo/redirects-edge";
 
 export const ANON_ID_COOKIE = "cms_anon_id";
 const ANON_ID_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 export async function proxy(request: NextRequest) {
+  // Redirect manager (§15): checked before auth/session logic so a 301/302
+  // never pays for a session refresh it doesn't need. Skipped for /admin and
+  // /api so the CMS itself is never accidentally redirected.
+  const pathname = request.nextUrl.pathname;
+  if (!pathname.startsWith("/admin") && !pathname.startsWith("/api")) {
+    const redirect = await lookupRedirect(pathname);
+    if (redirect) {
+      const url = request.nextUrl.clone();
+      url.pathname = redirect.to;
+      return NextResponse.redirect(url, redirect.status);
+    }
+  }
+
   const response = await updateSession(request);
 
   // Long-lived anonymous visitor id, used only to associate reading/video
