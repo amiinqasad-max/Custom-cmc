@@ -37,6 +37,7 @@ export function MediaPickerDialog({
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-open, not a render-time sync
     setLoading(true);
     listMediaAction({ fileType, perPage: 60 })
       .then((res) => setItems(res.items as MediaItem[]))

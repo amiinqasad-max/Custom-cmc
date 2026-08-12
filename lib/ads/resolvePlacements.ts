@@ -84,18 +84,25 @@ export function resolvePlacements(input: ResolvePlacementsInput): CandidatePlace
   const byPriority = [...valid].sort((a, b) => b.priority - a.priority);
   const capped = byPriority.slice(0, Math.max(0, safety.maxAdsPerArticle));
 
-  // Walk in document order, dropping anything too close to the previously *kept* placement.
-  const inDocOrder = [...capped].sort((a, b) => positionRank(a, context.paragraphCount) - positionRank(b, context.paragraphCount));
+  // top/bottom are structural edges, not paragraph-spaced content — they
+  // always render if selected above and never compete for the min-gap rule.
+  // The gap rule only applies among placements interleaved with the content.
+  const edges = capped.filter((p) => p.positionType === "top" || p.positionType === "bottom");
+  const middle = capped.filter((p) => p.positionType !== "top" && p.positionType !== "bottom");
+
+  const inDocOrder = [...middle].sort(
+    (a, b) => positionRank(a, context.paragraphCount) - positionRank(b, context.paragraphCount)
+  );
 
   const kept: CandidatePlacement[] = [];
   let lastRank: number | null = null;
   for (const placement of inDocOrder) {
     const rank = positionRank(placement, context.paragraphCount);
-    if (lastRank === null || rank - lastRank >= safety.minParagraphsBetweenAds || placement.positionType === "top" || placement.positionType === "bottom") {
+    if (lastRank === null || rank - lastRank >= safety.minParagraphsBetweenAds) {
       kept.push(placement);
       lastRank = rank;
     }
   }
 
-  return kept;
+  return [...edges.filter((p) => p.positionType === "top"), ...kept, ...edges.filter((p) => p.positionType === "bottom")];
 }

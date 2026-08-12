@@ -9,13 +9,11 @@ import { MediaPickerDialog } from "@/components/admin/media/media-picker-dialog"
 import type { MediaItem } from "@/services/media.service";
 
 export function ImagePickerField({
-  value,
   preview,
   onChange,
   userId,
   label = "Select image",
 }: {
-  value: string | null;
   preview: { url: string; alt?: string | null } | null;
   onChange: (mediaId: string | null, preview: { url: string; alt?: string | null } | null) => void;
   userId: string;

@@ -22,6 +22,7 @@ export function AutoNextOverlay({
 
   useEffect(() => {
     if (!completed || !nextArticle || !autoNextEnabled) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reacting to a completion event, not a render-time sync
     setCounting(true);
 
     const timeout = setTimeout(() => {

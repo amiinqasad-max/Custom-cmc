@@ -139,7 +139,6 @@ export function PageEditorForm({
                 <AccordionTrigger>Featured image</AccordionTrigger>
                 <AccordionContent>
                   <ImagePickerField
-                    value={watch("featured_image_id") ?? null}
                     preview={imagePreview}
                     userId={userId}
                     onChange={(id, preview) => {

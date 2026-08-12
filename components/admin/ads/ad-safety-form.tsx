@@ -50,7 +50,7 @@ export function AdSafetyForm({ settings }: { settings: AdsSettings }) {
             <Input id="min_content_length_before_ads" name="min_content_length_before_ads" type="number" min={0} defaultValue={settings.min_content_length_before_ads} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="short_article_word_count">"Short article" word count threshold</Label>
+            <Label htmlFor="short_article_word_count">&ldquo;Short article&rdquo; word count threshold</Label>
             <Input id="short_article_word_count" name="short_article_word_count" type="number" min={0} defaultValue={settings.short_article_word_count} />
           </div>
           <div className="flex items-center justify-between rounded-lg border p-3">

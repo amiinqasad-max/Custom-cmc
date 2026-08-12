@@ -6,7 +6,7 @@ export function JsonLd({ data }: { data: object }) {
   return (
     <script
       type="application/ld+json"
-      // eslint-disable-next-line react/no-danger -- JSON.stringify of trusted server-built objects, not user HTML
+      // JSON.stringify of trusted server-built objects, not user HTML.
       dangerouslySetInnerHTML={{ __html: json }}
     />
   );

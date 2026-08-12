@@ -63,7 +63,6 @@ export function PostEditorForm({
     handleSubmit,
     watch,
     setValue,
-    getValues,
     formState: { errors },
   } = useForm<PostInput>({
     resolver: zodResolver(postSchema),
@@ -82,7 +81,12 @@ export function PostEditorForm({
       const payload: PostInput = {
         ...values,
         status,
-        videos: videoSlots.map(({ mediaPreview: _mediaPreview, ...v }) => v),
+        videos: videoSlots.map((slot) => ({
+          slot_index: slot.slot_index,
+          media_id: slot.media_id,
+          required: slot.required,
+          completion_threshold_percent: slot.completion_threshold_percent,
+        })),
       };
       startTransition(async () => {
         try {
@@ -234,7 +238,6 @@ export function PostEditorForm({
                 <AccordionTrigger>Featured image</AccordionTrigger>
                 <AccordionContent>
                   <ImagePickerField
-                    value={watch("featured_image_id") ?? null}
                     preview={imagePreview}
                     userId={userId}
                     onChange={(id, preview) => {
