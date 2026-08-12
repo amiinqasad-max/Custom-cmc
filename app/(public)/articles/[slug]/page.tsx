@@ -14,8 +14,11 @@ import { ArticleBody, type InjectionPoint } from "@/components/public/article-bo
 import { ArticleTrackingProvider } from "@/components/public/article-tracking-provider";
 import { AutoNextOverlay } from "@/components/public/auto-next-overlay";
 import { AdSlot } from "@/components/public/ad-slot";
+import { CommentsSection } from "@/components/public/comments-section";
 import { Badge } from "@/components/ui/badge";
 import { analyzeContent } from "@/lib/content/analyze";
+import { getApprovedCommentsForPost } from "@/services/comments.service";
+import { getCurrentProfile } from "@/lib/auth/guards";
 
 export const revalidate = 60;
 
@@ -68,9 +71,10 @@ export default async function ArticlePage({ params }: PageProps<"/articles/[slug
 
   const { post, category, author, tags, videos } = data;
   const supabase = createPublicClient();
-  const [readingSettings, seoDefaults, resolvedAds] = await Promise.all([
+  const [readingSettings, seoDefaults, contentSettings, resolvedAds] = await Promise.all([
     getSetting("reading", supabase),
     getSetting("seo_defaults", supabase),
+    getSetting("content", supabase),
     getResolvedAdPlacementsForPost({
       postId: post.id,
       categoryId: post.category_id,
@@ -81,6 +85,10 @@ export default async function ArticlePage({ params }: PageProps<"/articles/[slug
   ]);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
   const threshold = post.completion_threshold_percent ?? readingSettings.completion_threshold_percent;
+
+  const [comments, currentProfile] = contentSettings.comments_enabled
+    ? await Promise.all([getApprovedCommentsForPost(post.id), getCurrentProfile()])
+    : [[], null];
 
   // "middle" and "before_conclusion" are relative positions computed against
   // paragraph count — resolve them to a concrete after_paragraph index once
@@ -187,6 +195,10 @@ export default async function ArticlePage({ params }: PageProps<"/articles/[slug
             Required reading progress: {threshold}% · Videos required: {Object.keys(videos).length}/
             {data.postVideos.filter((v) => v.required).length || data.postVideos.length}
           </p>
+
+          {contentSettings.comments_enabled && (
+            <CommentsSection postId={post.id} postSlug={post.slug} comments={comments} isSignedIn={!!currentProfile} />
+          )}
         </article>
 
         <AutoNextOverlay
