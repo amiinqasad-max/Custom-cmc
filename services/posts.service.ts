@@ -102,7 +102,17 @@ function buildContentFields(content: TiptapDoc, excerpt?: string | null) {
 }
 
 async function syncPostVideos(supabase: Awaited<ReturnType<typeof createClient>>, postId: string, videos: PostInput["videos"]) {
-  for (const v of videos) {
+  // Only slots with a media file assigned become real post_videos rows —
+  // an empty slot isn't "a video that's 0% complete", it doesn't exist yet.
+  const configured = videos.filter((v) => v.media_id);
+
+  const mediaIds = configured.map((v) => v.media_id as string);
+  const { data: mediaRows } = mediaIds.length
+    ? await supabase.from("media").select("id, duration_seconds").in("id", mediaIds)
+    : { data: [] as Array<{ id: string; duration_seconds: number | null }> };
+  const durationByMediaId = new Map((mediaRows ?? []).map((m) => [m.id, m.duration_seconds]));
+
+  for (const v of configured) {
     await supabase.from("post_videos").upsert(
       {
         post_id: postId,
@@ -110,14 +120,17 @@ async function syncPostVideos(supabase: Awaited<ReturnType<typeof createClient>>
         media_id: v.media_id,
         required: v.required,
         completion_threshold_percent: v.completion_threshold_percent,
+        // Duration is always dynamically detected from the media file itself
+        // (§4), never hard-coded — re-synced from `media` on every save.
+        duration_seconds: v.media_id ? (durationByMediaId.get(v.media_id) ?? null) : null,
       },
       { onConflict: "post_id,slot_index" }
     );
   }
-  // Remove slots the editor no longer uses (e.g. article shrank from 3 videos to 2).
-  const keepSlots = videos.map((v) => v.slot_index);
+  // Remove slots the editor cleared or no longer uses.
+  const keepSlots = configured.map((v) => v.slot_index);
   let del = supabase.from("post_videos").delete().eq("post_id", postId);
-  if (keepSlots.length) del = del.not("slot_index", "in", `(${keepSlots.join(",")})`);
+  del = keepSlots.length ? del.not("slot_index", "in", `(${keepSlots.join(",")})`) : del;
   await del;
 }
 

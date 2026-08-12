@@ -12,11 +12,15 @@ export const tiptapDocSchema = z.object({
 export const postVideoSchema = z.object({
   slot_index: z.number().int().min(1).max(3),
   media_id: z.string().uuid().nullable(),
-  required: z.boolean().default(true),
-  completion_threshold_percent: z.number().int().min(1).max(100).default(90),
+  required: z.boolean(),
+  completion_threshold_percent: z.number().int().min(1).max(100),
 });
 export type PostVideoInput = z.infer<typeof postVideoSchema>;
 
+// No `.default()` anywhere in this schema: it's paired with react-hook-form's
+// zodResolver, whose TFieldValues must match the *input* type exactly. All
+// defaults are supplied via the form's `defaultValues` prop instead
+// (see emptyPostDefaults()).
 export const postSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(300),
   slug: z
@@ -29,26 +33,15 @@ export const postSchema = z.object({
   content: tiptapDocSchema,
   featured_image_id: z.string().uuid().optional().nullable(),
   category_id: z.string().uuid().optional().nullable(),
-  tag_ids: z.array(z.string().uuid()).default([]),
+  tag_ids: z.array(z.string().uuid()),
   author_id: z.string().uuid().optional().nullable(),
-  status: z.enum(["draft", "scheduled", "published", "archived"]).default("draft"),
-  is_featured: z.boolean().default(false),
+  status: z.enum(["draft", "scheduled", "published", "archived"]),
+  is_featured: z.boolean(),
   scheduled_at: z.string().datetime().optional().nullable(),
   next_article_id: z.string().uuid().optional().nullable(),
   completion_threshold_percent: z.number().int().min(1).max(100).optional().nullable(),
-  videos: z.array(postVideoSchema).max(3).default([]),
-  seo: seoMetadataSchema.default({
-    seo_title: null,
-    meta_description: null,
-    canonical_url: null,
-    robots_index: true,
-    robots_follow: true,
-    og_title: null,
-    og_description: null,
-    og_image_id: null,
-    twitter_card: "summary_large_image",
-    schema_type: null,
-  }),
+  videos: z.array(postVideoSchema).max(3),
+  seo: seoMetadataSchema,
 }).refine((data) => data.status !== "scheduled" || !!data.scheduled_at, {
   message: "Scheduled articles need a scheduled date/time",
   path: ["scheduled_at"],
