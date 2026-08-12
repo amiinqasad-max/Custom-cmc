@@ -4,15 +4,18 @@ import Image from "next/image";
 import type { Metadata } from "next";
 
 import { getPublishedPostBySlug } from "@/services/public-content.service";
+import { getResolvedAdPlacementsForPost } from "@/services/ads.service";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getSetting } from "@/services/settings.service";
 import { buildEntityMetadata } from "@/lib/seo/metadata";
 import { articleSchema, breadcrumbSchema } from "@/lib/seo/schema";
 import { JsonLd } from "@/components/public/json-ld";
-import { ArticleBody } from "@/components/public/article-body";
+import { ArticleBody, type InjectionPoint } from "@/components/public/article-body";
 import { ArticleTrackingProvider } from "@/components/public/article-tracking-provider";
 import { AutoNextOverlay } from "@/components/public/auto-next-overlay";
+import { AdSlot } from "@/components/public/ad-slot";
 import { Badge } from "@/components/ui/badge";
+import { analyzeContent } from "@/lib/content/analyze";
 
 export const revalidate = 60;
 
@@ -65,12 +68,58 @@ export default async function ArticlePage({ params }: PageProps<"/articles/[slug
 
   const { post, category, author, tags, videos } = data;
   const supabase = createPublicClient();
-  const [readingSettings, seoDefaults] = await Promise.all([
+  const [readingSettings, seoDefaults, resolvedAds] = await Promise.all([
     getSetting("reading", supabase),
     getSetting("seo_defaults", supabase),
+    getResolvedAdPlacementsForPost({
+      postId: post.id,
+      categoryId: post.category_id,
+      categoryAdsEnabled: category?.ads_enabled ?? true,
+      content: post.content as never,
+      videoSlotsPresent: Object.keys(videos).map(Number),
+    }),
   ]);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
   const threshold = post.completion_threshold_percent ?? readingSettings.completion_threshold_percent;
+
+  // "middle" and "before_conclusion" are relative positions computed against
+  // paragraph count — resolve them to a concrete after_paragraph index once
+  // we know it, so they can slot into the same after_paragraph injection points.
+  const { paragraphCount } = analyzeContent(post.content as never);
+  const middleParagraph = Math.max(1, Math.round(paragraphCount / 2));
+  const beforeConclusionParagraph = Math.max(1, paragraphCount - 1);
+
+  function renderAdInjection(point: InjectionPoint): React.ReactNode {
+    const matches = resolvedAds.filter(({ placement }) => {
+      if (point.type === "top") return placement.positionType === "top";
+      if (point.type === "bottom") return placement.positionType === "bottom";
+      if (point.type === "after_paragraph") {
+        if (placement.positionType === "after_paragraph") return placement.paragraphNumber === point.paragraphIndex;
+        if (placement.positionType === "middle") return middleParagraph === point.paragraphIndex;
+        if (placement.positionType === "before_conclusion") return beforeConclusionParagraph === point.paragraphIndex;
+        return false;
+      }
+      if (point.type === "before_video") return placement.positionType === "before_video" && placement.videoSlot === point.videoSlot;
+      if (point.type === "after_video") return placement.positionType === "after_video" && placement.videoSlot === point.videoSlot;
+      return false;
+    });
+    if (matches.length === 0) return null;
+    return (
+      <>
+        {matches.map(({ placement, adSlot }) => (
+          <AdSlot
+            key={placement.id}
+            placementId={placement.id}
+            postId={post.id}
+            adClient={adSlot.ad_client}
+            adSlot={adSlot.ad_slot}
+            format={adSlot.format}
+            responsive={adSlot.responsive}
+          />
+        ))}
+      </>
+    );
+  }
 
   return (
     <>
@@ -122,7 +171,7 @@ export default async function ArticlePage({ params }: PageProps<"/articles/[slug
             </div>
           )}
 
-          <ArticleBody content={post.content as never} videos={videos} />
+          <ArticleBody content={post.content as never} videos={videos} renderInjection={renderAdInjection} />
 
           {tags.length > 0 && (
             <div className="mt-8 flex flex-wrap gap-2 border-t pt-6">
