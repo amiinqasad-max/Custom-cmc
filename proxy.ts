@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { updateSession } from "@/lib/supabase/middleware";
 import { lookupRedirect } from "@/lib/seo/redirects-edge";
+import { ANON_ID_COOKIE } from "@/lib/constants";
 
-export const ANON_ID_COOKIE = "cms_anon_id";
 const ANON_ID_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 export async function proxy(request: NextRequest) {

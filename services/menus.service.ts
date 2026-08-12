@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { logActivity } from "@/services/activity.service";
 import type { MenuInput, MenuItemInput } from "@/schemas/menu";
 import type { Tables, TablesUpdate } from "@/types/database.types";
@@ -96,9 +97,9 @@ export async function reorderMenuItems(orderedIds: string[], userId: string) {
   await logActivity(supabase, { userId, action: "menu.reordered", resourceType: "menu" });
 }
 
-/** Public read used by the site header/footer. */
+/** Public read used by the site header/footer — no cookies, so pages using this stay statically generatable. */
 export async function getPublicMenuByLocation(location: "header" | "footer") {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data: menu } = await supabase.from("menus").select("*").eq("location", location).limit(1).maybeSingle();
   if (!menu) return null;
   const { data: items } = await supabase
@@ -107,5 +108,28 @@ export async function getPublicMenuByLocation(location: "header" | "footer") {
     .eq("menu_id", menu.id)
     .eq("is_enabled", true)
     .order("sort_order");
-  return { menu, items: items ?? [] };
+  return { menu, items: items ?? [], hrefById: await resolvePublicMenuItemHrefs(supabase, items ?? []) };
 }
+
+async function resolvePublicMenuItemHrefs(
+  supabase: ReturnType<typeof createPublicClient>,
+  items: Tables<"menu_items">[]
+) {
+  const byType = { page: [] as string[], article: [] as string[], category: [] as string[] };
+  for (const item of items) {
+    if (item.type !== "custom_url" && item.target_id) byType[item.type].push(item.target_id);
+  }
+
+  const [{ data: pages }, { data: posts }, { data: categories }] = await Promise.all([
+    byType.page.length ? supabase.from("pages").select("id, slug").in("id", byType.page) : Promise.resolve({ data: [] }),
+    byType.article.length ? supabase.from("posts").select("id, slug").in("id", byType.article) : Promise.resolve({ data: [] }),
+    byType.category.length ? supabase.from("categories").select("id, slug").in("id", byType.category) : Promise.resolve({ data: [] }),
+  ]);
+
+  const map = new Map<string, string>();
+  for (const p of pages ?? []) map.set(p.id, `/page/${p.slug}`);
+  for (const p of posts ?? []) map.set(p.id, `/articles/${p.slug}`);
+  for (const c of categories ?? []) map.set(c.id, `/category/${c.slug}`);
+  return map;
+}
+

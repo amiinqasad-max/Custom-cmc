@@ -11,3 +11,12 @@ export type TiptapNode = {
 export type TiptapDoc = { type: "doc"; content?: TiptapNode[] };
 
 export const EMPTY_DOC: TiptapDoc = { type: "doc", content: [] };
+
+/** A resolved video file ready to render, keyed by slot index (1-3) in the caller. */
+export type VideoAsset = { url: string; posterUrl?: string | null; durationSeconds?: number | null };
+
+export type ContentInjectionPoint =
+  | { type: "top" }
+  | { type: "after_paragraph"; paragraphIndex: number }
+  | { type: "before_video" | "after_video"; videoSlot: number }
+  | { type: "bottom" };

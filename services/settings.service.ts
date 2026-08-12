@@ -1,8 +1,10 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { createClient } from "@/lib/supabase/server";
 import { logActivity } from "@/services/activity.service";
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 
 export type GeneralSettings = {
   site_name: string;
@@ -107,8 +109,18 @@ export const SETTINGS_DEFAULTS: SettingsMap = {
   performance: { public_page_revalidate_seconds: 60 },
 };
 
-export async function getSetting<K extends keyof SettingsMap>(key: K): Promise<SettingsMap[K]> {
-  const supabase = await createClient();
+/**
+ * Reads one settings group. `settings` is public-readable under RLS (no
+ * secrets ever live in this table), so public pages can pass a
+ * `createPublicClient()` here to avoid pulling in cookies()/auth for a
+ * plain settings read — admin screens omit the param and get the
+ * cookie-scoped client as usual.
+ */
+export async function getSetting<K extends keyof SettingsMap>(
+  key: K,
+  client?: SupabaseClient<Database>
+): Promise<SettingsMap[K]> {
+  const supabase = client ?? (await createClient());
   const { data } = await supabase.from("settings").select("value").eq("key", key).maybeSingle();
   return { ...SETTINGS_DEFAULTS[key], ...(data?.value as object) } as SettingsMap[K];
 }
