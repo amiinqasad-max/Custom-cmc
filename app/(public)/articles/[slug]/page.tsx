@@ -175,7 +175,7 @@ export default async function ArticlePage({ params }: PageProps<"/articles/[slug
 
           {data.featuredImageUrl && (
             <div className="relative mb-8 aspect-video w-full overflow-hidden rounded-lg">
-              <Image src={data.featuredImageUrl} alt={post.title} fill sizes="768px" className="object-cover" unoptimized priority />
+              <Image src={data.featuredImageUrl} alt={post.title} fill sizes="768px" className="object-cover" priority />
             </div>
           )}
 

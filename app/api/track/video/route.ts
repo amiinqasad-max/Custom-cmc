@@ -8,16 +8,20 @@ import { isVideoComplete, watchPercentage } from "@/lib/tracking/completion";
 import { getOrCreateArticleSession, evaluateAndPersistCompletion } from "@/services/tracking.service";
 import { ANON_ID_COOKIE } from "@/lib/constants";
 import { checkRateLimit } from "@/lib/tracking/rateLimit";
+import { getTrackRateLimit } from "@/lib/tracking/rateLimitConfig";
+import { isSameOrigin } from "@/lib/tracking/originCheck";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  if (!isSameOrigin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const parsed = videoTrackSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   const input = parsed.data;
 
   const anonId = request.cookies.get(ANON_ID_COOKIE)?.value ?? null;
-  if (!(await checkRateLimit(`video:${anonId ?? "anon"}`))) {
+  if (!(await checkRateLimit(`video:${anonId ?? "anon"}`, await getTrackRateLimit()))) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   }
 

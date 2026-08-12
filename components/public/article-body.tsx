@@ -78,7 +78,6 @@ function renderBlock(node: TiptapNode, key: string): React.ReactNode {
           height={675}
           sizes="(max-width: 768px) 100vw, 768px"
           className="h-auto w-full"
-          unoptimized
         />
       );
     case "table":

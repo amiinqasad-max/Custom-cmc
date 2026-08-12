@@ -45,14 +45,19 @@ export async function savePostAction(postId: string | null, input: PostInput) {
   revalidatePath("/admin/posts");
   revalidatePath(`/admin/posts/${post.id}`);
   revalidatePath(`/articles/${post.slug}`);
+  revalidatePath("/");
+  if (post.category_id) revalidatePath("/category/[slug]", "page");
   return post;
 }
 
 export async function deletePostAction(id: string) {
   const profile = await assertCanEditPost(id);
   assertPermission(profile, PERMISSIONS.POSTS_DELETE);
+  const { post } = await getPostForEdit(id);
   await deletePost(id, profile.id);
   revalidatePath("/admin/posts");
+  revalidatePath(`/articles/${post.slug}`);
+  revalidatePath("/");
 }
 
 export async function duplicatePostAction(id: string) {
@@ -66,7 +71,10 @@ export async function duplicatePostAction(id: string) {
 export async function setPostStatusAction(id: string, status: "draft" | "published" | "archived") {
   const profile = await assertCanEditPost(id);
   assertPermission(profile, PERMISSIONS.POSTS_PUBLISH);
+  const { post } = await getPostForEdit(id);
   await setPostStatus(id, status, profile.id);
   revalidatePath("/admin/posts");
   revalidatePath(`/admin/posts/${id}`);
+  revalidatePath(`/articles/${post.slug}`);
+  revalidatePath("/");
 }

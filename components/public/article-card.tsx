@@ -15,7 +15,6 @@ export function ArticleCard({ post }: { post: PublicPostCard }) {
             fill
             sizes="(max-width: 768px) 100vw, 33vw"
             className="object-cover transition-transform group-hover:scale-105"
-            unoptimized
           />
         )}
       </div>

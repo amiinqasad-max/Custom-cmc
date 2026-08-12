@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { adTrackSchema } from "@/schemas/adTrack";
 import { ANON_ID_COOKIE } from "@/lib/constants";
 import { checkRateLimit } from "@/lib/tracking/rateLimit";
+import { isSameOrigin } from "@/lib/tracking/originCheck";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,8 @@ export const runtime = "nodejs";
  * surfaced explicitly in the admin Advertisements analytics screen.
  */
 export async function POST(request: NextRequest) {
+  if (!isSameOrigin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const parsed = adTrackSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 

@@ -31,6 +31,7 @@ export async function proxy(request: NextRequest) {
       path: "/",
       sameSite: "lax",
       httpOnly: false, // client tracking code needs to read this
+      secure: process.env.NODE_ENV === "production",
     });
   }
 

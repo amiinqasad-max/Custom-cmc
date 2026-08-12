@@ -7,17 +7,21 @@ import { clampPercent, clampTimeSpent } from "@/lib/tracking/antiFraud";
 import { getOrCreateArticleSession, evaluateAndPersistCompletion } from "@/services/tracking.service";
 import { ANON_ID_COOKIE } from "@/lib/constants";
 import { checkRateLimit } from "@/lib/tracking/rateLimit";
+import { getTrackRateLimit } from "@/lib/tracking/rateLimitConfig";
+import { isSameOrigin } from "@/lib/tracking/originCheck";
 import type { TablesUpdate } from "@/types/database.types";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  if (!isSameOrigin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const parsed = articleTrackSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   const input = parsed.data;
 
   const anonId = request.cookies.get(ANON_ID_COOKIE)?.value ?? null;
-  if (!(await checkRateLimit(`article:${anonId ?? "anon"}`))) {
+  if (!(await checkRateLimit(`article:${anonId ?? "anon"}`, await getTrackRateLimit()))) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   }
 
