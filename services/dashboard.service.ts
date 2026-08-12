@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { getOverviewAnalytics, getTopArticles } from "@/services/analytics.service";
 
 export type DashboardOverview = {
   totalPosts: number;
@@ -43,14 +44,7 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
       supabase.from("posts").select("*", { count: "exact", head: true }).eq("status", "scheduled"),
     ]);
 
-  const { count: totalSessions } = await supabase
-    .from("article_sessions")
-    .select("*", { count: "exact", head: true });
-
-  const { count: completedSessions } = await supabase
-    .from("article_sessions")
-    .select("*", { count: "exact", head: true })
-    .eq("completed", true);
+  const [overview, topArticles] = await Promise.all([getOverviewAnalytics(30), getTopArticles(5)]);
 
   const { count: adRenderCount } = await supabase
     .from("ad_events")
@@ -88,15 +82,14 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
     publishedPosts: publishedPosts ?? 0,
     draftPosts: draftPosts ?? 0,
     scheduledPosts: scheduledPosts ?? 0,
-    totalVisitors: totalSessions ?? 0,
-    totalPageviews: totalSessions ?? 0,
-    articleCompletionRate:
-      totalSessions && totalSessions > 0 ? Math.round(((completedSessions ?? 0) / totalSessions) * 1000) / 10 : null,
-    avgReadingTimeSeconds: null,
-    videoCompletionRate: null,
+    totalVisitors: overview.visitors,
+    totalPageviews: overview.pageviews,
+    articleCompletionRate: overview.pageviews > 0 ? overview.articleCompletionRate : null,
+    avgReadingTimeSeconds: overview.pageviews > 0 ? overview.avgSessionDurationSeconds : null,
+    videoCompletionRate: overview.pageviews > 0 ? overview.videoCompletionRate : null,
     adImpressions: adRenderCount ?? 0,
     adRenderRate: adRequestCount && adRequestCount > 0 ? Math.round(((adRenderCount ?? 0) / adRequestCount) * 1000) / 10 : null,
     recentPosts,
-    topArticles: [],
+    topArticles: topArticles.map((a) => ({ post_id: a.postId, title: a.title, slug: a.slug, views: a.views })),
   };
 }
