@@ -115,6 +115,11 @@ insert into public.settings (key, value) values
   )),
   ('performance', jsonb_build_object(
     'public_page_revalidate_seconds', 60
+  )),
+  ('email', jsonb_build_object(
+    'from_name', 'My Content Site',
+    'from_email', null,
+    'reply_to', null
   ))
 on conflict (key) do nothing;
 

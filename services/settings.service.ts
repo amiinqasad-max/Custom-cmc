@@ -55,6 +55,8 @@ export type AnalyticsSettings = { anonymous_tracking_enabled: boolean; heartbeat
 export type SecuritySettings = { track_api_rate_limit_per_minute: number };
 export type ContentSettings = { default_post_status: string; comments_enabled: boolean };
 export type PerformanceSettings = { public_page_revalidate_seconds: number };
+/** Non-secret email display config only — SMTP credentials/API keys always live in server env vars, never here. */
+export type EmailSettings = { from_name: string; from_email: string | null; reply_to: string | null };
 
 export type SettingsMap = {
   general: GeneralSettings;
@@ -66,6 +68,7 @@ export type SettingsMap = {
   security: SecuritySettings;
   content: ContentSettings;
   performance: PerformanceSettings;
+  email: EmailSettings;
 };
 
 export const SETTINGS_DEFAULTS: SettingsMap = {
@@ -107,6 +110,7 @@ export const SETTINGS_DEFAULTS: SettingsMap = {
   security: { track_api_rate_limit_per_minute: 120 },
   content: { default_post_status: "draft", comments_enabled: true },
   performance: { public_page_revalidate_seconds: 60 },
+  email: { from_name: "My Content Site", from_email: null, reply_to: null },
 };
 
 /**
