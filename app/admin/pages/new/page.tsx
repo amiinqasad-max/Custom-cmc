@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth/guards";
-import { PageEditorForm, emptyPageDefaults } from "@/components/admin/pages/page-editor-form";
+import { PageEditorForm } from "@/components/admin/pages/page-editor-form";
+import { emptyPageDefaults } from "@/schemas/page";
 
 export const metadata = { title: "New page" };
 

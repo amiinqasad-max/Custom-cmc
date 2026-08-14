@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { seoMetadataSchema } from "@/schemas/seo";
+import { seoMetadataSchema, EMPTY_SEO } from "@/schemas/seo";
 import { tiptapDocSchema } from "@/schemas/post";
 
 // No `.default()` — paired with react-hook-form's zodResolver; defaults come
@@ -20,3 +20,17 @@ export const pageSchema = z.object({
   seo: seoMetadataSchema,
 });
 export type PageInput = z.infer<typeof pageSchema>;
+
+// Plain data, deliberately kept out of any "use client" module — see the
+// matching comment on emptyPostDefaults() in schemas/post.ts for why.
+export function emptyPageDefaults(): PageInput {
+  return {
+    title: "",
+    slug: "",
+    content: { type: "doc", content: [] },
+    featured_image_id: null,
+    status: "draft",
+    ads_enabled: false,
+    seo: EMPTY_SEO,
+  };
+}

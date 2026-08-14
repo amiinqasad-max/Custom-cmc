@@ -161,26 +161,3 @@ export function PageEditorForm({
     </div>
   );
 }
-
-export function emptyPageDefaults(): PageInput {
-  return {
-    title: "",
-    slug: "",
-    content: { type: "doc", content: [] },
-    featured_image_id: null,
-    status: "draft",
-    ads_enabled: false,
-    seo: {
-      seo_title: null,
-      meta_description: null,
-      canonical_url: null,
-      robots_index: true,
-      robots_follow: true,
-      og_title: null,
-      og_description: null,
-      og_image_id: null,
-      twitter_card: "summary_large_image",
-      schema_type: null,
-    },
-  };
-}
