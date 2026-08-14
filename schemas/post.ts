@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { seoMetadataSchema } from "@/schemas/seo";
+import { seoMetadataSchema, EMPTY_SEO } from "@/schemas/seo";
 
 // TipTap JSON is arbitrary-depth; validate shape loosely and trust the
 // editor to produce well-formed content (server still sanitizes on render).
@@ -48,6 +48,30 @@ export const postSchema = z.object({
 });
 
 export type PostInput = z.infer<typeof postSchema>;
+
+// Plain data, deliberately kept out of any "use client" module: a server
+// component (app/admin/posts/new/page.tsx) calls this directly, and calling
+// a function exported from a client module from server code throws at
+// runtime ("Attempted to call X from the server but X is on the client").
+export function emptyPostDefaults(): PostInput {
+  return {
+    title: "",
+    slug: "",
+    excerpt: "",
+    content: { type: "doc", content: [] },
+    featured_image_id: null,
+    category_id: null,
+    tag_ids: [],
+    author_id: null,
+    status: "draft",
+    is_featured: false,
+    scheduled_at: null,
+    next_article_id: null,
+    completion_threshold_percent: null,
+    videos: [],
+    seo: EMPTY_SEO,
+  };
+}
 
 export const postFiltersSchema = z.object({
   search: z.string().optional(),

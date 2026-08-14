@@ -2,7 +2,8 @@ import { requireRole } from "@/lib/auth/guards";
 import { listCategories } from "@/services/categories.service";
 import { listTags } from "@/services/tags.service";
 import { listPosts } from "@/services/posts.service";
-import { PostEditorForm, emptyPostDefaults } from "@/components/admin/posts/post-editor-form";
+import { PostEditorForm } from "@/components/admin/posts/post-editor-form";
+import { emptyPostDefaults } from "@/schemas/post";
 import type { VideoSlotState } from "@/components/admin/posts/video-slots-panel";
 
 const EMPTY_VIDEO_SLOTS: VideoSlotState[] = [1, 2, 3].map((slot_index) => ({

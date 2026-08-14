@@ -8,7 +8,6 @@ import { Loader2, Eye, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 import { postSchema, type PostInput } from "@/schemas/post";
-import { EMPTY_SEO } from "@/schemas/seo";
 import { slugifyTitle } from "@/lib/content/slug";
 import { savePostAction, duplicatePostAction } from "@/app/admin/posts/actions";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
@@ -325,24 +324,4 @@ export function PostEditorForm({
       </div>
     </div>
   );
-}
-
-export function emptyPostDefaults(): PostInput {
-  return {
-    title: "",
-    slug: "",
-    excerpt: "",
-    content: { type: "doc", content: [] },
-    featured_image_id: null,
-    category_id: null,
-    tag_ids: [],
-    author_id: null,
-    status: "draft",
-    is_featured: false,
-    scheduled_at: null,
-    next_article_id: null,
-    completion_threshold_percent: null,
-    videos: [],
-    seo: EMPTY_SEO,
-  };
 }
