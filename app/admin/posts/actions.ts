@@ -16,6 +16,7 @@ import {
   getPostForEdit,
 } from "@/services/posts.service";
 import { slugifyTitle, uniqueSlug } from "@/lib/content/slug";
+import { parseOrThrow } from "@/lib/zod-error";
 
 async function assertCanEditPost(postId?: string) {
   const profile = await requireRole("author");
@@ -36,7 +37,7 @@ export async function savePostAction(postId: string | null, input: PostInput) {
     assertPermission(profile, PERMISSIONS.POSTS_PUBLISH);
   }
 
-  const parsed = postSchema.parse(input);
+  const parsed = parseOrThrow(postSchema, input);
   const slugs = await getExistingPostSlugs();
   parsed.slug = uniqueSlug(parsed.slug || slugifyTitle(parsed.title), slugs, postId ? parsed.slug : undefined);
 

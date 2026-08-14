@@ -8,7 +8,7 @@ import { Loader2, Eye, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 import { postSchema, type PostInput } from "@/schemas/post";
-import { slugifyTitle } from "@/lib/content/slug";
+import { slugifyTitle, sanitizeSlugInput } from "@/lib/content/slug";
 import { savePostAction, duplicatePostAction } from "@/app/admin/posts/actions";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { ImagePickerField } from "@/components/admin/posts/image-picker-field";
@@ -76,28 +76,34 @@ export function PostEditorForm({
   const tagIds = watch("tag_ids");
 
   function onSubmit(status: PostInput["status"]) {
-    return handleSubmit((values) => {
-      const payload: PostInput = {
-        ...values,
-        status,
-        videos: videoSlots.map((slot) => ({
-          slot_index: slot.slot_index,
-          media_id: slot.media_id,
-          required: slot.required,
-          completion_threshold_percent: slot.completion_threshold_percent,
-        })),
-      };
-      startTransition(async () => {
-        try {
-          const post = await savePostAction(postId, payload);
-          toast.success(status === "published" ? "Published" : status === "scheduled" ? "Scheduled" : "Saved");
-          if (!postId) router.push(`/admin/posts/${post.id}`);
-          else router.refresh();
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : "Failed to save");
-        }
-      });
-    })();
+    return handleSubmit(
+      (values) => {
+        const payload: PostInput = {
+          ...values,
+          status,
+          videos: videoSlots.map((slot) => ({
+            slot_index: slot.slot_index,
+            media_id: slot.media_id,
+            required: slot.required,
+            completion_threshold_percent: slot.completion_threshold_percent,
+          })),
+        };
+        startTransition(async () => {
+          try {
+            const post = await savePostAction(postId, payload);
+            toast.success(status === "published" ? "Published" : status === "scheduled" ? "Scheduled" : "Saved");
+            if (!postId) router.push(`/admin/posts/${post.id}`);
+            else router.refresh();
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to save");
+          }
+        });
+      },
+      // Without this, an invalid field (e.g. a slug with a capital letter)
+      // just blocks submission with zero feedback — nothing visibly happens
+      // when the button is clicked.
+      () => toast.error("Please fix the highlighted fields before saving."),
+    )();
   }
 
   return (
@@ -121,12 +127,16 @@ export function PostEditorForm({
           <Input
             {...register("slug")}
             className="h-7 max-w-xs text-sm"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
             onChange={(e) => {
               setSlugTouched(true);
-              setValue("slug", e.target.value);
+              setValue("slug", sanitizeSlugInput(e.target.value));
             }}
           />
         </div>
+        {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
 
         <Textarea
           {...register("excerpt")}

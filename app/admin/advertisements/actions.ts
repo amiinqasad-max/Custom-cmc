@@ -14,9 +14,10 @@ import {
   deleteAdPlacement,
 } from "@/services/ads.service";
 import { updateSetting } from "@/services/settings.service";
+import { parseOrThrow } from "@/lib/zod-error";
 
 function parseSlotForm(formData: FormData) {
-  return adSlotSchema.parse({
+  return parseOrThrow(adSlotSchema, {
     name: formData.get("name"),
     ad_client: formData.get("ad_client"),
     ad_slot: formData.get("ad_slot"),
@@ -50,7 +51,7 @@ export async function deleteAdSlotAction(id: string) {
 function parsePlacementForm(formData: FormData) {
   const paragraph = formData.get("paragraph_number");
   const videoSlot = formData.get("video_slot");
-  return adPlacementSchema.parse({
+  return parseOrThrow(adPlacementSchema, {
     name: formData.get("name"),
     ad_slot_id: formData.get("ad_slot_id"),
     position_type: formData.get("position_type"),
@@ -86,7 +87,7 @@ export async function updateAdSafetyAction(formData: FormData) {
   const profile = await requireRole("admin");
   assertPermission(profile, PERMISSIONS.ADS_MANAGE);
 
-  const parsed = adSafetySchema.parse({
+  const parsed = parseOrThrow(adSafetySchema, {
     max_ads_per_article: Number(formData.get("max_ads_per_article")),
     min_paragraphs_between_ads: Number(formData.get("min_paragraphs_between_ads")),
     min_content_length_before_ads: Number(formData.get("min_content_length_before_ads")),

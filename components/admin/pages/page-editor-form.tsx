@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { pageSchema, type PageInput } from "@/schemas/page";
-import { slugifyTitle } from "@/lib/content/slug";
+import { slugifyTitle, sanitizeSlugInput } from "@/lib/content/slug";
 import { savePageAction } from "@/app/admin/pages/actions";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { ImagePickerField } from "@/components/admin/posts/image-picker-field";
@@ -51,18 +51,21 @@ export function PageEditorForm({
   const seo = watch("seo");
 
   function onSubmit(status: PageInput["status"]) {
-    return handleSubmit((values) => {
-      startTransition(async () => {
-        try {
-          const page = await savePageAction(pageId, { ...values, status });
-          toast.success(status === "published" ? "Published" : "Saved");
-          if (!pageId) router.push(`/admin/pages/${page.id}`);
-          else router.refresh();
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : "Failed to save");
-        }
-      });
-    })();
+    return handleSubmit(
+      (values) => {
+        startTransition(async () => {
+          try {
+            const page = await savePageAction(pageId, { ...values, status });
+            toast.success(status === "published" ? "Published" : "Saved");
+            if (!pageId) router.push(`/admin/pages/${page.id}`);
+            else router.refresh();
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to save");
+          }
+        });
+      },
+      () => toast.error("Please fix the highlighted fields before saving."),
+    )();
   }
 
   return (
@@ -84,12 +87,16 @@ export function PageEditorForm({
           <Input
             {...register("slug")}
             className="h-7 max-w-xs text-sm"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
             onChange={(e) => {
               setSlugTouched(true);
-              setValue("slug", e.target.value);
+              setValue("slug", sanitizeSlugInput(e.target.value));
             }}
           />
         </div>
+        {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
 
         <RichTextEditor
           content={content as never}

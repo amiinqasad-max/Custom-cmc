@@ -8,6 +8,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { inviteUser, updateUserRole, deleteUser, setRolePermission } from "@/services/users.service";
 import type { PermissionKey } from "@/lib/auth/permissions";
 import type { UserRole } from "@/types/database.types";
+import { parseOrThrow } from "@/lib/zod-error";
 
 const roleSchema = z.enum(["author", "editor", "admin", "super_admin"]);
 
@@ -15,8 +16,8 @@ export async function inviteUserAction(formData: FormData) {
   const profile = await requireRole("admin");
   assertPermission(profile, PERMISSIONS.USERS_MANAGE);
 
-  const email = z.string().email().parse(formData.get("email"));
-  const role = roleSchema.parse(formData.get("role"));
+  const email = parseOrThrow(z.string().email(), formData.get("email"));
+  const role = parseOrThrow(roleSchema, formData.get("role"));
   if (role === "super_admin" && profile.role !== "super_admin") {
     throw new Error("Only a super_admin can invite another super_admin");
   }
@@ -28,7 +29,7 @@ export async function inviteUserAction(formData: FormData) {
 export async function updateUserRoleAction(userId: string, role: string) {
   const profile = await requireRole("admin");
   assertPermission(profile, PERMISSIONS.USERS_MANAGE);
-  const parsedRole = roleSchema.parse(role);
+  const parsedRole = parseOrThrow(roleSchema, role);
   if (parsedRole === "super_admin" && profile.role !== "super_admin") {
     throw new Error("Only a super_admin can grant the super_admin role");
   }

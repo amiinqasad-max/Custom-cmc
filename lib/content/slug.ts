@@ -5,6 +5,18 @@ export function slugifyTitle(input: string): string {
 }
 
 /**
+ * Normalizes free-typed slug input as the user types, so it always matches
+ * postSchema/pageSchema's `^[a-z0-9-]+$` rule. Needed because mobile
+ * keyboards auto-capitalize the first letter of a plain text input by
+ * default — without this, typing directly into the slug field produces an
+ * invalid slug and the save/publish button silently does nothing (zodResolver
+ * blocks submission on invalid input with no native browser feedback).
+ */
+export function sanitizeSlugInput(input: string): string {
+  return input.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
+
+/**
  * Appends -2, -3, ... until `candidate` isn't in `existingSlugs`. Pure and
  * unit-testable; callers fetch the existing-slugs set from the DB first.
  */

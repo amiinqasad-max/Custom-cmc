@@ -7,9 +7,10 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { categorySchema } from "@/schemas/taxonomy";
 import { createCategory, updateCategory, deleteCategory, getExistingCategorySlugs } from "@/services/categories.service";
 import { slugifyTitle, uniqueSlug } from "@/lib/content/slug";
+import { parseOrThrow } from "@/lib/zod-error";
 
 function parseForm(formData: FormData) {
-  return categorySchema.parse({
+  return parseOrThrow(categorySchema, {
     name: formData.get("name"),
     slug: String(formData.get("slug") || "").trim() || slugifyTitle(String(formData.get("name") || "")),
     description: formData.get("description") || null,

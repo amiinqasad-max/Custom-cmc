@@ -140,7 +140,7 @@ export function ArticleBody({
       const asset = videos[slot];
       inject({ type: "before_video", videoSlot: slot }, `inject-before-video-${slot}`);
       output.push(
-        <div key={key} className="article-video-block">
+        <div key={key} data-video-slot={slot} className="article-video-block scroll-mt-20">
           {asset ? (
             <TrackedVideoPlayer slotIndex={slot} src={asset.url} posterUrl={asset.posterUrl} durationSeconds={asset.durationSeconds} />
           ) : (

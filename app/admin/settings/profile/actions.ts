@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
+import { parseOrThrow } from "@/lib/zod-error";
 
 const profileSchema = z.object({
   display_name: z.string().trim().min(1).max(150),
@@ -13,7 +14,7 @@ const profileSchema = z.object({
 
 export async function updateProfileAction(formData: FormData) {
   const profile = await requireUser();
-  const parsed = profileSchema.parse({
+  const parsed = parseOrThrow(profileSchema, {
     display_name: formData.get("display_name"),
     avatar_url: formData.get("avatar_url") || null,
   });

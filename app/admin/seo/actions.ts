@@ -7,6 +7,7 @@ import { requireRole, assertPermission } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { updateSetting, type SeoDefaultsSettings } from "@/services/settings.service";
 import { createRedirect, updateRedirect, deleteRedirect } from "@/services/redirects.service";
+import { parseOrThrow } from "@/lib/zod-error";
 
 const seoDefaultsSchema = z.object({
   default_seo_title_suffix: z.string().max(100),
@@ -21,7 +22,7 @@ export async function updateSeoDefaultsAction(formData: FormData) {
   const profile = await requireRole("admin");
   assertPermission(profile, PERMISSIONS.SEO_MANAGE);
 
-  const parsed = seoDefaultsSchema.parse({
+  const parsed = parseOrThrow(seoDefaultsSchema, {
     default_seo_title_suffix: formData.get("default_seo_title_suffix"),
     default_meta_description: formData.get("default_meta_description"),
     default_og_image_url: formData.get("default_og_image_url") || null,
@@ -43,7 +44,7 @@ const redirectSchema = z.object({
 export async function createRedirectAction(formData: FormData) {
   const profile = await requireRole("admin");
   assertPermission(profile, PERMISSIONS.REDIRECTS_MANAGE);
-  const input = redirectSchema.parse({
+  const input = parseOrThrow(redirectSchema, {
     from_path: formData.get("from_path"),
     to_path: formData.get("to_path"),
     status_code: formData.get("status_code"),

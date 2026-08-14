@@ -7,9 +7,10 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { tagSchema } from "@/schemas/taxonomy";
 import { createTag, updateTag, deleteTag, getExistingTagSlugs } from "@/services/tags.service";
 import { slugifyTitle, uniqueSlug } from "@/lib/content/slug";
+import { parseOrThrow } from "@/lib/zod-error";
 
 function parseForm(formData: FormData) {
-  return tagSchema.parse({
+  return parseOrThrow(tagSchema, {
     name: formData.get("name"),
     slug: String(formData.get("slug") || "").trim() || slugifyTitle(String(formData.get("name") || "")),
     description: formData.get("description") || null,

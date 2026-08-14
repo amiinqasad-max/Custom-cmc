@@ -16,6 +16,7 @@ import {
 } from "@/services/menus.service";
 import { slugifyTitle, uniqueSlug } from "@/lib/content/slug";
 import { createClient } from "@/lib/supabase/server";
+import { parseOrThrow } from "@/lib/zod-error";
 
 export async function getMenuItemsAction(menuId: string) {
   await requireRole("admin");
@@ -31,7 +32,7 @@ export async function createMenuAction(formData: FormData) {
   const { data: existing } = await supabase.from("menus").select("slug");
   const slug = uniqueSlug(slugifyTitle(name), new Set((existing ?? []).map((m) => m.slug)));
 
-  const input = menuSchema.parse({ name, slug, location: formData.get("location") });
+  const input = parseOrThrow(menuSchema, { name, slug, location: formData.get("location") });
   const menu = await createMenu(input, profile.id);
   revalidatePath("/admin/menus");
   return menu;
@@ -49,7 +50,7 @@ export async function createMenuItemAction(formData: FormData) {
   assertPermission(profile, PERMISSIONS.MENUS_MANAGE);
 
   const parentId = formData.get("parent_id");
-  const input = menuItemSchema.parse({
+  const input = parseOrThrow(menuItemSchema, {
     menu_id: formData.get("menu_id"),
     parent_id: parentId && parentId !== "none" ? parentId : null,
     label: formData.get("label"),

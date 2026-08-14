@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireRole, assertPermission } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { updateSetting } from "@/services/settings.service";
+import { parseOrThrow } from "@/lib/zod-error";
 
 async function guard() {
   const profile = await requireRole("admin");
@@ -24,7 +25,7 @@ const generalSchema = z.object({
 
 export async function updateGeneralSettingsAction(formData: FormData) {
   const profile = await guard();
-  const parsed = generalSchema.parse({
+  const parsed = parseOrThrow(generalSchema, {
     site_name: formData.get("site_name"),
     site_description: formData.get("site_description"),
     logo_url: formData.get("logo_url") || null,
@@ -46,7 +47,7 @@ const readingSchema = z.object({
 
 export async function updateReadingSettingsAction(formData: FormData) {
   const profile = await guard();
-  const parsed = readingSchema.parse({
+  const parsed = parseOrThrow(readingSchema, {
     completion_threshold_percent: Number(formData.get("completion_threshold_percent")),
     video_completion_threshold_percent: Number(formData.get("video_completion_threshold_percent")),
     auto_next_enabled: formData.get("auto_next_enabled") === "on",
@@ -67,7 +68,7 @@ const socialSchema = z.object({
 
 export async function updateSocialSettingsAction(formData: FormData) {
   const profile = await guard();
-  const parsed = socialSchema.parse({
+  const parsed = parseOrThrow(socialSchema, {
     facebook_url: formData.get("facebook_url") || null,
     twitter_url: formData.get("twitter_url") || null,
     instagram_url: formData.get("instagram_url") || null,
@@ -85,7 +86,7 @@ const analyticsSchema = z.object({
 
 export async function updateAnalyticsSettingsAction(formData: FormData) {
   const profile = await guard();
-  const parsed = analyticsSchema.parse({
+  const parsed = parseOrThrow(analyticsSchema, {
     anonymous_tracking_enabled: formData.get("anonymous_tracking_enabled") === "on",
     heartbeat_interval_seconds: Number(formData.get("heartbeat_interval_seconds")),
   });
@@ -97,7 +98,7 @@ const securitySchema = z.object({ track_api_rate_limit_per_minute: z.number().in
 
 export async function updateSecuritySettingsAction(formData: FormData) {
   const profile = await guard();
-  const parsed = securitySchema.parse({ track_api_rate_limit_per_minute: Number(formData.get("track_api_rate_limit_per_minute")) });
+  const parsed = parseOrThrow(securitySchema, { track_api_rate_limit_per_minute: Number(formData.get("track_api_rate_limit_per_minute")) });
   await updateSetting("security", parsed, profile.id);
   revalidatePath("/admin/settings");
 }
@@ -109,7 +110,7 @@ const contentSchema = z.object({
 
 export async function updateContentSettingsAction(formData: FormData) {
   const profile = await guard();
-  const parsed = contentSchema.parse({
+  const parsed = parseOrThrow(contentSchema, {
     default_post_status: formData.get("default_post_status"),
     comments_enabled: formData.get("comments_enabled") === "on",
   });
@@ -121,7 +122,7 @@ const performanceSchema = z.object({ public_page_revalidate_seconds: z.number().
 
 export async function updatePerformanceSettingsAction(formData: FormData) {
   const profile = await guard();
-  const parsed = performanceSchema.parse({ public_page_revalidate_seconds: Number(formData.get("public_page_revalidate_seconds")) });
+  const parsed = parseOrThrow(performanceSchema, { public_page_revalidate_seconds: Number(formData.get("public_page_revalidate_seconds")) });
   await updateSetting("performance", parsed, profile.id);
   revalidatePath("/admin/settings");
 }
@@ -134,7 +135,7 @@ const emailSchema = z.object({
 
 export async function updateEmailSettingsAction(formData: FormData) {
   const profile = await guard();
-  const parsed = emailSchema.parse({
+  const parsed = parseOrThrow(emailSchema, {
     from_name: formData.get("from_name"),
     from_email: formData.get("from_email") || "",
     reply_to: formData.get("reply_to") || "",
