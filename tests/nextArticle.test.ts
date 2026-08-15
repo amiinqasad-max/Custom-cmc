@@ -100,4 +100,90 @@ describe("resolveNextArticle", () => {
     });
     expect(result?.id).toBe("ranked");
   });
+
+  describe("random", () => {
+    it("picks uniformly from the candidate pool using the injected RNG", () => {
+      const pool = [
+        post({ id: "a", slug: "a" }),
+        post({ id: "b", slug: "b" }),
+        post({ id: "c", slug: "c" }),
+      ];
+      // random() -> 0.5 of a pool of 3 => floor(1.5) = index 1 => "b"
+      const result = resolveNextArticle({
+        current,
+        manualNext: null,
+        strategy: "random",
+        sameCategoryCandidates: [],
+        randomCandidates: pool,
+        random: () => 0.5,
+      });
+      expect(result?.id).toBe("b");
+    });
+
+    it("never returns an unpublished candidate", () => {
+      const pool = [post({ id: "draft", status: "draft" })];
+      const result = resolveNextArticle({
+        current,
+        manualNext: null,
+        strategy: "random",
+        sameCategoryCandidates: [],
+        randomCandidates: pool,
+        random: () => 0,
+      });
+      expect(result).toBeNull();
+    });
+
+    it("returns null with an empty pool (no published articles at all)", () => {
+      const result = resolveNextArticle({
+        current,
+        manualNext: null,
+        strategy: "random",
+        sameCategoryCandidates: [],
+        randomCandidates: [],
+      });
+      expect(result).toBeNull();
+    });
+
+    it("can loop back to the current article when it's the only published article (caller-supplied fallback)", () => {
+      // The service layer is responsible for excluding `current` from the
+      // pool when alternatives exist, and including it only as a last
+      // resort — this test documents that resolveNextArticle itself has no
+      // opinion on that and just picks from whatever pool it's given.
+      const result = resolveNextArticle({
+        current,
+        manualNext: null,
+        strategy: "random",
+        sameCategoryCandidates: [],
+        randomCandidates: [current],
+        random: () => 0,
+      });
+      expect(result?.id).toBe(current.id);
+    });
+
+    it("an RNG value of exactly 1 still lands on the last item, not out of bounds", () => {
+      const pool = [post({ id: "a", slug: "a" }), post({ id: "b", slug: "b" })];
+      const result = resolveNextArticle({
+        current,
+        manualNext: null,
+        strategy: "random",
+        sameCategoryCandidates: [],
+        randomCandidates: pool,
+        random: () => 1,
+      });
+      expect(result?.id).toBe("b");
+    });
+
+    it("still prefers a published manual next_article_id over random", () => {
+      const manual = post({ id: "manual", slug: "manual" });
+      const result = resolveNextArticle({
+        current,
+        manualNext: manual,
+        strategy: "random",
+        sameCategoryCandidates: [],
+        randomCandidates: [post({ id: "other", slug: "other" })],
+        random: () => 0,
+      });
+      expect(result?.id).toBe("manual");
+    });
+  });
 });

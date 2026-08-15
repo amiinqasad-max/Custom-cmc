@@ -189,6 +189,48 @@ export async function listAllVideosWithStats(): Promise<VideoOverviewRow[]> {
   });
 }
 
+export type LiveDashboardStats = {
+  liveVisitors: number;
+  pageviewsToday: number;
+  videoViewsToday: number;
+  videoCompletionsToday: number;
+  videoCompletionRateToday: number;
+  overallVideoCompletionRate: number;
+};
+
+const EMPTY_LIVE_STATS: LiveDashboardStats = {
+  liveVisitors: 0,
+  pageviewsToday: 0,
+  videoViewsToday: 0,
+  videoCompletionsToday: 0,
+  videoCompletionRateToday: 0,
+  overallVideoCompletionRate: 0,
+};
+
+/**
+ * Backs the dashboard's live-updating stat row (components/admin/analytics/
+ * live-stats-bar.tsx polls this every ~15s). A single RPC round trip —
+ * see supabase/migrations/0016_live_dashboard_stats.sql for why this is a
+ * SQL function instead of the row-fetch-then-reduce-in-JS pattern the rest
+ * of this file uses: that pattern is fine for one SSR render, too expensive
+ * to repeat on a timer.
+ */
+export async function getLiveDashboardStats(): Promise<LiveDashboardStats> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_live_dashboard_stats");
+  if (error || !data?.[0]) return EMPTY_LIVE_STATS;
+
+  const row = data[0];
+  return {
+    liveVisitors: row.live_visitors,
+    pageviewsToday: row.pageviews_today,
+    videoViewsToday: row.video_views_today,
+    videoCompletionsToday: row.video_completions_today,
+    videoCompletionRateToday: row.video_completion_rate_today,
+    overallVideoCompletionRate: row.overall_video_completion_rate,
+  };
+}
+
 export type ArticleAnalytics = {
   views: number;
   uniqueSessions: number;

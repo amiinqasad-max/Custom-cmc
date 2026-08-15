@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import type { TiptapDoc, TiptapMark, TiptapNode, VideoAsset, ContentInjectionPoint } from "@/lib/content/types";
 import { TrackedVideoPlayer } from "@/components/public/tracked-video-player";
+import { groupVideoPlacementsByParagraph, type VideoPlacement } from "@/lib/content/videoPlacement";
 
 export type { VideoAsset };
 export type InjectionPoint = ContentInjectionPoint;
@@ -111,56 +112,66 @@ function renderBlock(node: TiptapNode, key: string): React.ReactNode {
  * of a cached HTML string — so the 3 tracked videos render as real
  * `<TrackedVideoPlayer>` instances and ad placements (wired in Phase 7 via
  * `renderInjection`) can sit as real components between paragraphs.
+ *
+ * Video placement is entirely computed, not authored: `videoPlacements`
+ * (from lib/content/videoPlacement.ts#resolveVideoPlacements) says which
+ * paragraph each configured video slot renders after, based on reading-
+ * progress percentages — there is no "video" node type read from `content`
+ * anymore. A legacy `articleVideo` node from before this existed (if any
+ * article still has one) just falls through `renderBlock`'s default case
+ * and renders nothing; it doesn't conflict with or duplicate the video,
+ * which now always comes from `videoPlacements` instead.
  */
 export function ArticleBody({
   content,
   videos,
+  videoPlacements = [],
   renderInjection,
 }: {
   content: TiptapDoc;
   videos: Record<number, VideoAsset>;
+  /** Omitted entirely by pages, which never have videos. */
+  videoPlacements?: VideoPlacement[];
   renderInjection?: (point: InjectionPoint) => React.ReactNode;
 }) {
   const nodes = content.content ?? [];
   let paragraphIndex = 0;
   const output: React.ReactNode[] = [];
+  const placementsByParagraph = groupVideoPlacementsByParagraph(videoPlacements);
 
   const inject = (point: InjectionPoint, key: string) => {
     const rendered = renderInjection?.(point);
     if (rendered) output.push(<Fragment key={key}>{rendered}</Fragment>);
   };
 
+  const renderVideoSlot = (slot: number) => {
+    const asset = videos[slot];
+    if (!asset) return; // resolveVideoPlacements only outputs configured slots, but stay defensive
+    inject({ type: "before_video", videoSlot: slot }, `inject-before-video-${slot}`);
+    output.push(
+      <div key={`video-${slot}`} data-video-slot={slot} className="article-video-block scroll-mt-20">
+        <TrackedVideoPlayer slotIndex={slot} src={asset.url} posterUrl={asset.posterUrl} durationSeconds={asset.durationSeconds} />
+      </div>
+    );
+    inject({ type: "after_video", videoSlot: slot }, `inject-after-video-${slot}`);
+  };
+
   inject({ type: "top" }, "inject-top");
 
   nodes.forEach((node, i) => {
     const key = `node-${i}`;
-
-    if (node.type === "articleVideo") {
-      const slot = Number(node.attrs?.slotIndex ?? 0);
-      const asset = videos[slot];
-      inject({ type: "before_video", videoSlot: slot }, `inject-before-video-${slot}`);
-      output.push(
-        <div key={key} data-video-slot={slot} className="article-video-block scroll-mt-20">
-          {asset ? (
-            <TrackedVideoPlayer slotIndex={slot} src={asset.url} posterUrl={asset.posterUrl} durationSeconds={asset.durationSeconds} />
-          ) : (
-            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-              Video {slot} not configured yet.
-            </div>
-          )}
-        </div>
-      );
-      inject({ type: "after_video", videoSlot: slot }, `inject-after-video-${slot}`);
-      return;
-    }
-
     output.push(renderBlock(node, key));
 
     if (node.type === "paragraph") {
       paragraphIndex += 1;
+      for (const slot of placementsByParagraph.get(paragraphIndex) ?? []) renderVideoSlot(slot);
       inject({ type: "after_paragraph", paragraphIndex }, `inject-after-p-${paragraphIndex}`);
     }
   });
+
+  // Sentinel for "no safe paragraph boundary existed" (a zero-paragraph
+  // article) — still render every configured video, just at the end.
+  for (const slot of placementsByParagraph.get(0) ?? []) renderVideoSlot(slot);
 
   inject({ type: "bottom" }, "inject-bottom");
 

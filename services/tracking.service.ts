@@ -142,11 +142,29 @@ export async function resolveNextArticleForPost(admin: AdminClient, postId: stri
     algorithmicCandidates = (recent ?? []).map(toSummary);
   }
 
+  let randomCandidates: PostSummary[] | undefined;
+  if (readingSettings.next_article_strategy === "random") {
+    // Capped, not the whole table — cheap indexed scan (posts_status_published_idx)
+    // rather than transferring an unbounded number of rows just to pick one.
+    // Previously-read articles are deliberately not excluded (the reading
+    // loop is meant to be able to resurface them).
+    const { data: pool } = await admin
+      .from("posts")
+      .select("id, slug, title, status, category_id, published_at")
+      .eq("status", "published")
+      .neq("id", postId)
+      .limit(500);
+    // Never dead-end the loop: if this is the only published article on the
+    // whole site, hand it back to itself rather than returning null.
+    randomCandidates = pool?.length ? pool.map(toSummary) : current.status === "published" ? [current] : [];
+  }
+
   return resolveNextArticle({
     current,
     manualNext: manualNextRow.data ? toSummary(manualNextRow.data) : null,
     strategy: readingSettings.next_article_strategy,
     sameCategoryCandidates: (sameCategoryRows.data ?? []).map(toSummary),
     algorithmicCandidates,
+    randomCandidates,
   });
 }

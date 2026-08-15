@@ -39,6 +39,11 @@ export function VideoSlotsPanel({
 
   return (
     <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        Just pick a file per slot — each video is placed in the article automatically at its
+        configured reading-progress point (default 30% / 60% / 90%, adjustable in
+        Settings → Reading). No manual insertion needed.
+      </p>
       {slots.map((slot, index) => (
         <div key={slot.slot_index} className="space-y-3 rounded-lg border p-3">
           <div className="flex items-center justify-between">

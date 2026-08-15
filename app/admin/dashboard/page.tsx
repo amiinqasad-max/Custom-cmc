@@ -12,6 +12,8 @@ import {
 
 import { getCurrentProfile } from "@/lib/auth/guards";
 import { getDashboardOverview } from "@/services/dashboard.service";
+import { getLiveDashboardStats } from "@/services/analytics.service";
+import { LiveStatsBar } from "@/components/admin/analytics/live-stats-bar";
 import { StatCard } from "@/components/admin/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +30,11 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
 };
 
 export default async function DashboardPage() {
-  const [profile, overview] = await Promise.all([getCurrentProfile(), getDashboardOverview()]);
+  const [profile, overview, liveStats] = await Promise.all([
+    getCurrentProfile(),
+    getDashboardOverview(),
+    getLiveDashboardStats(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -41,6 +47,8 @@ export default async function DashboardPage() {
           <Link href="/admin/posts/new">New article</Link>
         </Button>
       </div>
+
+      <LiveStatsBar initialData={liveStats} />
 
       {overview.totalVisitors === 0 && (
         <Alert>

@@ -17,6 +17,7 @@ import { AdSlot } from "@/components/public/ad-slot";
 import { CommentsSection } from "@/components/public/comments-section";
 import { Badge } from "@/components/ui/badge";
 import { analyzeContent } from "@/lib/content/analyze";
+import { resolveVideoPlacements } from "@/lib/content/videoPlacement";
 import { getApprovedCommentsForPost } from "@/services/comments.service";
 import { getCurrentProfile } from "@/lib/auth/guards";
 
@@ -96,6 +97,15 @@ export default async function ArticlePage({ params }: PageProps<"/articles/[slug
   const { paragraphCount } = analyzeContent(post.content as never);
   const middleParagraph = Math.max(1, Math.round(paragraphCount / 2));
   const beforeConclusionParagraph = Math.max(1, paragraphCount - 1);
+
+  // Videos are placed automatically at configured reading-progress
+  // percentages — the admin only picks which slots have a file, never where
+  // they land in the body (§ automatic video placement).
+  const videoPlacements = resolveVideoPlacements({
+    paragraphCount,
+    configuredSlots: Object.keys(videos).map(Number),
+    percentagesBySlot: readingSettings.video_placement_percentages,
+  });
 
   function renderAdInjection(point: InjectionPoint): React.ReactNode {
     const matches = resolvedAds.filter(({ placement }) => {
@@ -179,7 +189,12 @@ export default async function ArticlePage({ params }: PageProps<"/articles/[slug
             </div>
           )}
 
-          <ArticleBody content={post.content as never} videos={videos} renderInjection={renderAdInjection} />
+          <ArticleBody
+            content={post.content as never}
+            videos={videos}
+            videoPlacements={videoPlacements}
+            renderInjection={renderAdInjection}
+          />
 
           {tags.length > 0 && (
             <div className="mt-8 flex flex-wrap gap-2 border-t pt-6">

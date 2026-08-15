@@ -42,7 +42,10 @@ const readingSchema = z.object({
   video_completion_threshold_percent: z.number().int().min(1).max(100),
   auto_next_enabled: z.boolean(),
   auto_next_delay_ms: z.number().int().min(0).max(60_000),
-  next_article_strategy: z.enum(["same_category", "algorithmic"]),
+  next_article_strategy: z.enum(["same_category", "algorithmic", "random"]),
+  video_placement_percentages: z
+    .tuple([z.number().int().min(1).max(100), z.number().int().min(1).max(100), z.number().int().min(1).max(100)])
+    .refine(([a, b, c]) => a <= b && b <= c, "Video 1/2/3 percentages must be in ascending order"),
 });
 
 export async function updateReadingSettingsAction(formData: FormData) {
@@ -53,6 +56,11 @@ export async function updateReadingSettingsAction(formData: FormData) {
     auto_next_enabled: formData.get("auto_next_enabled") === "on",
     auto_next_delay_ms: Number(formData.get("auto_next_delay_ms")),
     next_article_strategy: formData.get("next_article_strategy"),
+    video_placement_percentages: [
+      Number(formData.get("video_placement_percent_1")),
+      Number(formData.get("video_placement_percent_2")),
+      Number(formData.get("video_placement_percent_3")),
+    ],
   });
   await updateSetting("reading", parsed, profile.id);
   revalidatePath("/admin/settings");

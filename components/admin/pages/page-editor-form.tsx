@@ -101,7 +101,6 @@ export function PageEditorForm({
         <RichTextEditor
           content={content as never}
           onChange={(json) => setValue("content", json as PageInput["content"], { shouldDirty: true })}
-          usedVideoSlots={[]}
           userId={userId}
         />
       </div>

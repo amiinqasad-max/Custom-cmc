@@ -16,7 +16,6 @@ import {
   TableIcon,
   Undo2,
   Redo2,
-  PlayCircle,
   Video,
 } from "lucide-react";
 
@@ -28,13 +27,9 @@ import { cn } from "@/lib/utils";
 export function EditorToolbar({
   editor,
   onInsertImage,
-  onInsertVideo,
-  availableVideoSlots,
 }: {
   editor: Editor | null;
   onInsertImage: () => void;
-  onInsertVideo: (slot: number) => void;
-  availableVideoSlots: number[];
 }) {
   if (!editor) return null;
 
@@ -110,17 +105,6 @@ export function EditorToolbar({
       >
         <Video className="size-4" />
       </Button>
-
-      {availableVideoSlots.length > 0 && (
-        <>
-          <Separator orientation="vertical" className="mx-1 h-6" />
-          {availableVideoSlots.map((slot) => (
-            <Button key={slot} type="button" variant="outline" size="sm" onClick={() => onInsertVideo(slot)}>
-              <PlayCircle className="size-4" /> Video {slot}
-            </Button>
-          ))}
-        </>
-      )}
 
       <Separator orientation="vertical" className="mx-1 h-6" />
       <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().undo().run()}>

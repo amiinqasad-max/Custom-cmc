@@ -9,7 +9,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
 import Youtube from "@tiptap/extension-youtube";
 import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { EditorToolbar } from "@/components/editor/toolbar";
 import { ArticleVideoBlock } from "@/components/editor/extensions/article-video-block";
@@ -28,19 +28,23 @@ const EXTENSIONS = [
   TableRow,
   TableHeader,
   TableCell,
+  // Videos are no longer inserted as content nodes (see
+  // lib/content/videoPlacement.ts — placement is computed automatically from
+  // reading-progress percentages, not authored). This extension stays
+  // registered purely so articles saved before that change — which do have
+  // an `articleVideo` node in their stored content — still load in the
+  // editor without a schema error; it renders as an inert, deletable
+  // placeholder box and nothing inserts new ones anymore.
   ArticleVideoBlock,
 ];
 
 export function RichTextEditor({
   content,
   onChange,
-  usedVideoSlots,
   userId,
 }: {
   content: JSONContent;
   onChange: (content: JSONContent) => void;
-  /** Video slots (1-3) configured in the sidebar and not yet placed in the content. */
-  usedVideoSlots: number[];
   userId: string;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -63,50 +67,13 @@ export function RichTextEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
 
-  // The moment a video slot gets a media file selected in the sidebar panel,
-  // place it in the article automatically instead of requiring a separate
-  // "Video N" toolbar click to notice and press — that extra manual step is
-  // exactly what left readers with an article with no video in it at all.
-  // Tracked in a ref (not just "is it in the doc") so deliberately deleting
-  // an auto-inserted block doesn't make it reappear on the next render; the
-  // toolbar buttons remain for manually placing/re-placing at a chosen spot.
-  const autoInsertedSlotsRef = useRef<Set<number>>(new Set());
-  useEffect(() => {
-    if (!editor) return;
-    const existingSlots = new Set<number>();
-    editor.state.doc.descendants((node) => {
-      if (node.type.name === "articleVideo") existingSlots.add(Number(node.attrs.slotIndex));
-    });
-    for (const slot of usedVideoSlots) {
-      if (existingSlots.has(slot) || autoInsertedSlotsRef.current.has(slot)) continue;
-      autoInsertedSlotsRef.current.add(slot);
-      editor.chain().insertContentAt(editor.state.doc.content.size, { type: "articleVideo", attrs: { slotIndex: slot } }).run();
-    }
-  }, [editor, usedVideoSlots]);
-
   function handleInsertImage(media: MediaItem) {
     editor?.chain().focus().setImage({ src: media.url, alt: media.alt_text ?? "" }).run();
   }
 
-  // Only offer a "Video N" toolbar button for slots not already placed in
-  // the doc (auto-insert above handles the common case; this is for
-  // deliberately re-placing one after deleting it). Re-evaluated on every
-  // render, which — since useEditor re-renders this component on every
-  // transaction — stays in sync as blocks are inserted/removed.
-  const placedSlots = new Set<number>();
-  editor?.state.doc.descendants((node) => {
-    if (node.type.name === "articleVideo") placedSlots.add(Number(node.attrs.slotIndex));
-  });
-  const availableVideoSlots = usedVideoSlots.filter((slot) => !placedSlots.has(slot));
-
   return (
     <div className="rounded-lg border">
-      <EditorToolbar
-        editor={editor}
-        onInsertImage={() => setPickerOpen(true)}
-        onInsertVideo={(slot) => editor?.chain().focus().insertArticleVideo(slot).run()}
-        availableVideoSlots={availableVideoSlots}
-      />
+      <EditorToolbar editor={editor} onInsertImage={() => setPickerOpen(true)} />
       <EditorContent editor={editor} className="min-h-[400px]" />
       <MediaPickerDialog open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleInsertImage} fileType="image" userId={userId} />
     </div>

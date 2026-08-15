@@ -481,6 +481,19 @@ export interface Database {
       get_my_role: { Args: Record<string, never>; Returns: UserRole | null };
       has_role_at_least: { Args: { min_role: string }; Returns: boolean };
       has_permission: { Args: { perm_key: string }; Returns: boolean };
+      get_live_dashboard_stats: {
+        Args: { live_window_minutes?: number };
+        Returns: {
+          live_visitors: number;
+          pageviews_today: number;
+          video_views_today: number;
+          video_completions_today: number;
+          video_completion_rate_today: number;
+          overall_video_views: number;
+          overall_video_completions: number;
+          overall_video_completion_rate: number;
+        }[];
+      };
     };
     Enums: Record<string, never>;
   };

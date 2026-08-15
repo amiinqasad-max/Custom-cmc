@@ -147,7 +147,6 @@ export function PostEditorForm({
         <RichTextEditor
           content={content as never}
           onChange={(json) => setValue("content", json as PostInput["content"], { shouldDirty: true })}
-          usedVideoSlots={videoSlots.filter((v) => v.media_id).map((v) => v.slot_index)}
           userId={userId}
         />
       </div>

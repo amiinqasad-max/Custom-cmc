@@ -20,7 +20,14 @@ export type ReadingSettings = {
   video_completion_threshold_percent: number;
   auto_next_enabled: boolean;
   auto_next_delay_ms: number;
-  next_article_strategy: "same_category" | "algorithmic";
+  next_article_strategy: "same_category" | "algorithmic" | "random";
+  /**
+   * Reading-progress percentages (1-100, ascending) at which video slots
+   * 1/2/3 are automatically placed in the article body — index 0 is slot 1's
+   * trigger point, index 1 is slot 2's, index 2 is slot 3's. See
+   * lib/content/videoPlacement.ts.
+   */
+  video_placement_percentages: [number, number, number];
 };
 
 export type AdsSettings = {
@@ -85,7 +92,8 @@ export const SETTINGS_DEFAULTS: SettingsMap = {
     video_completion_threshold_percent: 90,
     auto_next_enabled: true,
     auto_next_delay_ms: 1500,
-    next_article_strategy: "same_category",
+    next_article_strategy: "random",
+    video_placement_percentages: [30, 60, 90],
   },
   ads: {
     max_ads_per_article: 5,

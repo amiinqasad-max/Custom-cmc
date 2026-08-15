@@ -79,7 +79,8 @@ insert into public.settings (key, value) values
     'video_completion_threshold_percent', 90,
     'auto_next_enabled', true,
     'auto_next_delay_ms', 1500,
-    'next_article_strategy', 'same_category' -- 'same_category' | 'algorithmic'
+    'next_article_strategy', 'random', -- 'random' | 'same_category' | 'algorithmic'
+    'video_placement_percentages', jsonb_build_array(30, 60, 90) -- reading-progress % that auto-places videos 1/2/3
   )),
   ('ads', jsonb_build_object(
     'max_ads_per_article', 5,

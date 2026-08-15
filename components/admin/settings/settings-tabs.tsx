@@ -120,15 +120,64 @@ export function SettingsTabs({ settings }: { settings: SettingsMap }) {
                 <Select name="next_article_strategy" defaultValue={settings.reading.next_article_strategy}>
                   <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="random">Random (infinite loop)</SelectItem>
                     <SelectItem value="same_category">Same category</SelectItem>
                     <SelectItem value="algorithmic">Algorithmic (most recent)</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Random picks any published article each time (previously-read ones can come back
+                  around) so reading never dead-ends.
+                </p>
               </div>
-              <div className="flex items-center justify-between rounded-lg border p-3 sm:col-span-2">
+              <div className="flex items-center justify-between rounded-lg border p-3">
                 <Label htmlFor="auto_next_enabled" className="text-sm">Auto-next enabled</Label>
                 <Switch id="auto_next_enabled" name="auto_next_enabled" defaultChecked={settings.reading.auto_next_enabled} />
               </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Automatic video placement (reading progress %)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Each configured video is placed automatically at this point in the article — no
+                  manual insertion needed. Must be ascending (Video 1 ≤ Video 2 ≤ Video 3).
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="video_placement_percent_1" className="text-xs">Video 1 (%)</Label>
+                    <Input
+                      id="video_placement_percent_1"
+                      name="video_placement_percent_1"
+                      type="number"
+                      min={1}
+                      max={100}
+                      defaultValue={settings.reading.video_placement_percentages[0]}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="video_placement_percent_2" className="text-xs">Video 2 (%)</Label>
+                    <Input
+                      id="video_placement_percent_2"
+                      name="video_placement_percent_2"
+                      type="number"
+                      min={1}
+                      max={100}
+                      defaultValue={settings.reading.video_placement_percentages[1]}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="video_placement_percent_3" className="text-xs">Video 3 (%)</Label>
+                    <Input
+                      id="video_placement_percent_3"
+                      name="video_placement_percent_3"
+                      type="number"
+                      min={1}
+                      max={100}
+                      defaultValue={settings.reading.video_placement_percentages[2]}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="sm:col-span-2"><SaveButton pending={pending} /></div>
             </form>
           </CardContent>
